@@ -2,3 +2,5 @@ pandas
 numpy
 scipy
 openai
+dotenv
+psutil
