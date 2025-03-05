@@ -1,3 +1,4 @@
+"""Retrieval functions for embeddings and search."""
 
 from typing import Any, List
 import numpy as np

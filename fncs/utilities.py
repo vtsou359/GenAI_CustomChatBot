@@ -1,29 +1,35 @@
 """Utility functions."""
 
-import json
 from typing import Any, Callable, Dict, List, Optional, Tuple
-
-import openai
-import pandas as pd
 from openai import AzureOpenAI, OpenAI
 
 
 def create_openai_client(
         api_key: str,
+        base_url: str = "https://api.openai.com/v1",
         organization: Optional[str] = None
 ) -> OpenAI:
     """
-    Creates and returns an instance of OpenAI client.
+    Create an OpenAI client instance.
 
-    This function initializes a client object to interact with the OpenAI API service.
-    Authentication is done using an API key, which is required. Optionally, an organization ID
-    can be provided for users who belong to multiple organizations.
+    This function initializes and returns an instance of the OpenAI client,
+    configured with the specified API key, base URL, and optionally an
+    organization. The API key is mandatory, whereas providing a base URL is
+    optional and defaults to "https://api.openai.com/v1" if not supplied.
+    An organization can also be included to configure the client for a
+    specific organization.
 
-    :param api_key: The API key for authentication with OpenAI services.
-    :param organization: Optional organization ID for users who belong to multiple organizations.
-        If not provided, the default organization associated with the API key will be used.
-    :return: An instance of OpenAI configured with the provided parameters.
-    :raises ValueError: If api_key is None or empty.
+    :param api_key: The API key used for authenticating with the OpenAI API.
+    :type api_key: str
+    :param base_url: The base URL of the OpenAI API, with a default value of
+        "https://api.openai.com/v1".
+    :type base_url: str, optional
+    :param organization: Optional identifier for an organization to associate
+        with the client.
+    :type organization: Optional[str]
+    :return: An instance of the OpenAI client.
+    :rtype: OpenAI
+    :raises ValueError: If the API key is not provided.
     """
     if not api_key:
         raise ValueError("An API key must be provided.")
@@ -31,10 +37,11 @@ def create_openai_client(
     if organization:
         return OpenAI(
             api_key=api_key,
+            base_url=base_url,
             organization=organization
         )
     else:
-        return OpenAI(api_key=api_key)
+        return OpenAI(api_key=api_key, base_url=base_url)
 
 
 def create_azure_client(
