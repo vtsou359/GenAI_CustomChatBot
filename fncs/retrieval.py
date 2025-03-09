@@ -76,7 +76,7 @@ def create_embeddings_batch(client,
         raise RuntimeError(f"Failed to create embeddings: {str(e)}")
 
 
-def get_embedding(text: str, client: Any, model="text-embedding-3-large", **kwargs) -> List[float]:
+def get_embedding(text: str, client: Any, model="text-embedding-3-small", **kwargs) -> List[float]:
     """
     Computes the embedding vector for a given text using the specified client and model. The function
     replaces newline characters in the input text to mitigate potential negative effects on
@@ -96,35 +96,22 @@ def get_embedding(text: str, client: Any, model="text-embedding-3-large", **kwar
     return response.data[0].embedding
 
 
-def cosine_similarity(a, b):
-    """
-    Calculate the cosine similarity between two vectors. Cosine similarity measures the cosine
-    of the angle between two vectors in multi-dimensional space. The value returned is a scalar
-    between -1 and 1 where 1 indicates perfect similarity, 0 indicates orthogonality, and -1
-    indicates perfect dissimilarity.
-
-    :param a: First vector, typically represented as a numpy array.
-    :param b: Second vector, typically represented as a numpy array.
-    :return: Cosine similarity, a scalar value between -1 and 1.
-
-    """
-    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
-
 def cosine_distance(a, b):
     """
     Computes the cosine distance between two vectors.
 
-    The cosine distance is a measure of dissimilarity between two vectors,
-    calculated as 1 minus the cosine similarity. Cosine similarity measures
-    the cosine of the angle between two vectors in a multi-dimensional space.
-    This method is often used in machine learning and information retrieval
-    to determine the similarity between objects.
+    Parameters:
+        a: First vector
+        b: Second vector
 
-    :param a: First vector, represented as a numpy array.
-    :param b: Second vector, represented as a numpy array.
-    :return: Cosine distance between input vectors, as a float.
+    Returns:
+        Cosine distance between input vectors, as a float.
     """
-    return 1 - ( np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)) )
+    # Convert inputs to numpy arrays and ensure they're floating point numbers
+    #a = np.asarray(a, dtype=np.float32)
+    #b = np.asarray(b, dtype=np.float32)
+
+    return 1 - (np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
 
 
 def distances_from_embeddings(
@@ -149,51 +136,40 @@ def distances_from_embeddings(
 
 
 # search through the reviews for a specific product
-def search_reviews(df, embs_query, n=0, cosine = 'similarity'):
-
+def search_text(df, embs_query, n=0, cosine='distance'):
     """
-    Searches through reviews in a DataFrame by calculating similarity or distance
-    between the query embedding and each review's embedding. Supports sorting
-    results by similarity or distance and optionally returns the top `n` matches.
+    Search for similar texts using embeddings.
 
-    :param df: DataFrame containing the reviews and their associated embeddings.
-               Should have a column named `embedding` that contains the vector
-               representations for each review.
-    :type df: pandas.DataFrame
-    :param embs_query: The query embedding to be compared against each review's
-                       embedding.
-    :type embs_query: numpy.ndarray
-    :param n: Number of top results to return. Defaults to 0, which means all
-              results are returned.
-    :type n: int, optional
-    :param cosine: Determines the metric to use for comparison. Accepts either
-                   'similarity' (for cosine similarity) or 'distance' (for
-                   cosine distance). Defaults to 'similarity'.
-    :type cosine: str, optional
-    :return: DataFrame with results sorted by similarity or distance, depending
-             on `cosine`. The number of results returned corresponds to `n`
-             (or all if `n` is 0).
-    :rtype: pandas.DataFrame
+    Parameters:
+        df: DataFrame containing the embeddings
+        embs_query: Query embedding
+        n: Number of results to return (0 for all)
+        cosine: Type of cosine calculation ('distance' or 'similarity')
+
+    Returns:
+        DataFrame with results sorted by similarity
     """
     if cosine == 'similarity':
-        df["similarity"] = df.embeddings.apply(lambda x: cosine_similarity(x, embs_query))
-        if n==0:
+        df["similarity"] = df.embeddings.apply(
+            lambda x: 1 - cosine_distance(x, embs_query)
+        )
+        if n == 0:
             results = df.sort_values("similarity", ascending=False)
-            return results
         else:
             results = df.sort_values("similarity", ascending=False).head(n)
-            return results
+        return results
 
     elif cosine == 'distance':
-        df["distance"] = df.embeddings.apply(lambda x: cosine_distance(x, embs_query))
-        if n==0:
+        # Ensure embeddings are properly converted to numerical arrays
+        df["distance"] = df.embeddings.apply(
+            lambda x: cosine_distance(x, embs_query)
+        )
+        if n == 0:
             results = df.sort_values("distance", ascending=True)
-            return results
         else:
             results = df.sort_values("distance", ascending=True).head(n)
-            return results
-    else:
-        raise ValueError("cosine param must be 'similarity' or 'distance'")
+        return results
+
 
 
 # Function to add chunks to the context
