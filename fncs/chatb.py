@@ -1,10 +1,10 @@
+"""Main wrapper module for the fashion trends analysis chatbot."""
+
 import pandas as pd
 import os
-from pathlib import Path
 from dotenv import load_dotenv
 import tiktoken
 import ast
-import chainlit as cl
 
 # Custom Functions
 from fncs.utilities import (
@@ -21,7 +21,7 @@ from fncs.retrieval import (
 from fncs.prompt_templates import user_prompt
 
 
-
+# just a wrapper function - to further enhance it later
 def process_query(csv_path, query, max_token_count=1000):
     """
     Process a user query using the fashion trends dataset.
@@ -78,7 +78,7 @@ def process_query(csv_path, query, max_token_count=1000):
 
     # Build the final prompt and generate response
     final_prompt = prompt_builder(system_content=system_prompt, user_content_prompt=user_prompt_formatted)
-    additional_options = {"temperature": 0.4}
+    additional_options = {"temperature": 0.1}
 
     response, response_full = response_generator(
         openai_client,

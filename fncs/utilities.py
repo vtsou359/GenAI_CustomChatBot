@@ -3,7 +3,6 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from openai import AzureOpenAI, OpenAI
 
-
 def create_openai_client(
         api_key: str,
         base_url: str = "https://api.openai.com/v1",
