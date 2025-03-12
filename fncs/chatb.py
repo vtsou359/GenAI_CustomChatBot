@@ -18,6 +18,8 @@ from fncs.retrieval import (
     search_text,
     control_chunk_context
 )
+from fncs.prompt_templates import user_prompt
+
 
 
 def process_query(csv_path, query, max_token_count=1000):
@@ -56,41 +58,13 @@ def process_query(csv_path, query, max_token_count=1000):
     df_sorted = search_text(df=df, embs_query=query_emb, cosine='distance')
 
     # Create system prompt
-    system_prompt = "You are an expert fashion trend analyser. Based only on the provided information you must analyse and summarise the trends and provide an accurate answer."
+    system_prompt = ("You are an expert fashion trend analyser. "
+                     "Based only on the provided information "
+                     "you must analyse and summarise the trends and provide an accurate answer.")
 
-    # Create user prompt template
-    user_prompt = """
-    ***Question: {}
-
-    ***Context:
-    <--Start of Context-->
-    {}
-    <--End of Context-->
-
-    **Instructions:
-    - Answer based ONLY on the provided context above
-    - Do not include external knowledge
-    - Be concise and specific
-
-    **Required Format:
-    1. Answer:
-       [Your detailed response here]
-
-    2. Key Points:
-       • [Bullet point 1]
-       • [Bullet point 2]
-       • [...]
-
-    3. Sources:
-       • [Source URL 1]
-       • [Source URL 2]
-
-    Note: If the answer cannot be determined from the provided context,
-    state: "Cannot be determined from the given context."
-    """
 
     # Calculate token counts and create context
-    current_token_count = len(tokenizer.encode(user_prompt)) + len(tokenizer.encode(system_prompt))
+    current_token_count = len(tokenizer.encode(user_prompt())) + len(tokenizer.encode(system_prompt))
     context = control_chunk_context(
         chunks_sorted_df=df_sorted,
         current_token_count=current_token_count,
@@ -100,7 +74,7 @@ def process_query(csv_path, query, max_token_count=1000):
 
     # Format the prompt with context
     context_inprompt = "\n----\n".join(context)
-    user_prompt_formatted = user_prompt.format(query, context_inprompt)
+    user_prompt_formatted = user_prompt().format(query, context_inprompt)
 
     # Build the final prompt and generate response
     final_prompt = prompt_builder(system_content=system_prompt, user_content_prompt=user_prompt_formatted)

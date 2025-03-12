@@ -36,7 +36,7 @@ async def main(message: cl.Message):
     query = message.content
 
     # Show processing message
-    processing_msg = await cl.Message(content="Processing your fashion query...", author="Fashion Advisor").send()
+    processing_msg = await cl.Message(content="Processing your query...", author= "Fashion Advisor").send()
 
     # Create a step to show the embedding and retrieval process
     step = cl.Step(name="Retrieving relevant fashion information", type="tool")
