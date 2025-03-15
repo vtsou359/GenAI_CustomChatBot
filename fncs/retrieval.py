@@ -14,23 +14,24 @@ def create_embeddings_batch(client,
                             cost_per_thousand_tokens: float = 0.000125
                             ) -> tuple[pd.DataFrame, Any]:
     """
-    Creates embeddings for a given dataframe in batches by interacting with the client API. This function computes
-    embeddings for the text data in a specified column of the dataframe, adds the generated embeddings as a new
-    column, and calculates the total cost based on the number of tokens processed.
+    Creates a batch of embeddings from the provided text data in the dataframe and computes the
+    total cost for the embedding operation.
 
-    :param client: The client object used for interacting with the external embeddings API.
-    :param deployment_name: The name of the deployed embedding model to use for generating embeddings.
-    :param batch_size: The number of rows from the dataframe to process in each batch.
-    :param df: A pandas DataFrame containing the input data for which embeddings are to be generated.
-    :param chunk_column: The name of the column in the dataframe that contains the text data for embeddings.
-    :param cost_per_thousand_tokens: The cost per 1,000 tokens, used to calculate the total cost of processing.
-        Defaults to 0.000125 (price for: text-embedding-3-large) if not specified.
-    :return: A tuple containing the input dataframe with an additional "embeddings" column and the total cost
-        incurred for processing the embeddings.
-    :rtype: tuple(pd.DataFrame, float)
-    :raises ValueError: If the input dataframe is not a pandas DataFrame, the specified column is missing, or
-        if batch_size is less than 1.
-    :raises RuntimeError: If an error occurs during the embedding creation process.
+    This function processes text data within a specified chunk column of the dataframe, generates
+    embeddings in batches, appends the embeddings to the dataframe, and calculates the cost
+    incurred based on the number of tokens processed and the cost per thousand tokens.
+
+    :param client: The client object used for generating embeddings.
+    :param deployment_name: The name of the deployed model to create embeddings.
+    :param batch_size: The number of rows to process in each batch.
+    :param df: The pandas DataFrame containing the data with text for embedding.
+    :param chunk_column: The column in the dataframe containing the text data to embedd.
+    :param cost_per_thousand_tokens: The cost per thousand tokens used in calculating the total cost.
+        Defaults to 0.000125.
+    :return: A tuple consisting of the updated dataframe with embeddings and the computed total cost.
+    :raises ValueError: If the dataframe (`df`) is not a pandas DataFrame, the `chunk_column` is not
+        present in the dataframe, or `batch_size` is not positive.
+    :raises RuntimeError: If an exception occurs during the embedding creation process.
     """
     # Input validation
     if not isinstance(df, pd.DataFrame):
@@ -49,20 +50,35 @@ def create_embeddings_batch(client,
         # Process in batches
         for i in range(0, len(df), batch_size):
             # Get batch of texts
-            batch_texts = df.iloc[i:i+batch_size][chunk_column].tolist()
+            batch_texts = df.iloc[i:i + batch_size][chunk_column].tolist()
 
             # Generate embeddings for each row in the batch
             for text in batch_texts:
-                emb_response = client.embeddings.create(
-                    model= deployment_name,
-                    input= text.replace("\n", " ")
-                )
-                # Extract and append the embedding
-                embedding = emb_response.data[0].embedding
-                embeddings.append(embedding)
+                # Skip empty or None texts
+                if not text or not isinstance(text, str):
+                    embeddings.append([])  # Add empty embedding for invalid text
+                    continue
 
-                # calculate total tokens
-                total_tokens += emb_response.usage.prompt_tokens
+                emb_response = client.embeddings.create(
+                    model=deployment_name,
+                    input=text.replace("\n", " ")
+                )
+
+                # Check if response and its components are valid
+                if (emb_response and hasattr(emb_response, 'data') and
+                        emb_response.data and len(emb_response.data) > 0 and
+                        hasattr(emb_response.data[0], 'embedding')):
+                    # Extract and append the embedding
+                    embedding = emb_response.data[0].embedding
+                    embeddings.append(embedding)
+
+                    # Calculate total tokens if usage information is available
+                    if hasattr(emb_response, 'usage') and hasattr(emb_response.usage, 'prompt_tokens'):
+                        total_tokens += emb_response.usage.prompt_tokens
+                else:
+                    # Handle invalid response by adding an empty embedding
+                    print(f"Warning: Invalid embedding response for text: {text[:50]}...")
+                    embeddings.append([])
 
         # Add embeddings to the dataframe
         df["embeddings"] = embeddings
@@ -74,6 +90,7 @@ def create_embeddings_batch(client,
 
     except Exception as e:
         raise RuntimeError(f"Failed to create embeddings: {str(e)}")
+
 
 
 def get_embedding(text: str, client: Any, model="text-embedding-3-small", **kwargs) -> List[float]:

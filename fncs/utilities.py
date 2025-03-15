@@ -43,6 +43,35 @@ def create_openai_client(
         return OpenAI(api_key=api_key, base_url=base_url)
 
 
+
+
+def create_ollama_client(
+        api_key: str = 'ollama',
+        base_url: str = 'http://localhost:11434/v1/',
+) -> OpenAI:
+    """
+    Creates and returns an instance of the OpenAI client initialized with the provided API key
+    and base URL. This function ensures that a valid API key is supplied for authentication.
+
+    :param api_key: The API key required for authenticating with the OpenAI API.
+    :param base_url: The base URL of the OpenAI API endpoint.
+    :return: An instance of the OpenAI client initialized with the given credentials and
+             configuration.
+
+    :raises ValueError: If the API key is not provided.
+    """
+    if not api_key:
+        raise ValueError("An API key must be provided.")
+
+    client = OpenAI(
+        base_url=base_url,
+        # required but ignored
+        api_key=api_key,
+    )
+    return client
+
+
+
 def create_azure_client(
         api_version: str,
         azure_endpoint: str,

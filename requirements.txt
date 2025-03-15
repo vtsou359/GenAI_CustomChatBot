@@ -6,3 +6,4 @@ dotenv
 psutil
 tiktoken
 chainlit
+ollama
