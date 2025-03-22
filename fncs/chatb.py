@@ -22,13 +22,15 @@ from fncs.prompt_templates import user_prompt
 
 
 # just a wrapper function - to further enhance it later
-def process_query(csv_path, query, max_token_count=1000):
+def process_query(csv_path, query, api_key=None, chat_model='gpt-4o', max_token_count=1000):
     """
     Process a user query using the fashion trends dataset.
 
     Args:
         csv_path (str): Path to the CSV file with embeddings
         query (str): User query text
+        api_key (str, optional): OpenAI API key. If None, loads from environment variable
+        chat_model (str, optional): OpenAI chat model to use. Default: 'gpt-4o'
         max_token_count (int): Maximum token count for context (default: 1000)
 
     Returns:
@@ -37,15 +39,16 @@ def process_query(csv_path, query, max_token_count=1000):
     # Load environment vars
     load_dotenv()
     base_url_voc = os.getenv("OPENAI_BASE_VOC")
-    api_key_voc = os.getenv("OPENAI_API_VOC")
 
-    # Deployment model names
-    chat_name = 'gpt-4o'
+    # Use provided API key or fall back to environment variable
+    api_key_voc = api_key if api_key else os.getenv("OPENAI_API_VOC")
+
+    # Deployment model names - use provided chat_model or default
     emb_name = 'text-embedding-3-large'
 
     # Initialize OpenAI client and tokenizer
     openai_client = create_openai_client(api_key=api_key_voc, base_url=base_url_voc)
-    tokenizer = tiktoken.encoding_for_model(chat_name)
+    tokenizer = tiktoken.encoding_for_model(chat_model)
 
     # Load and prepare the dataset
     df = pd.read_csv(csv_path)
@@ -61,7 +64,6 @@ def process_query(csv_path, query, max_token_count=1000):
     system_prompt = ("You are an expert fashion trend analyser. "
                      "Based only on the provided information "
                      "you must analyse and summarise the trends and provide an accurate answer.")
-
 
     # Calculate token counts and create context
     current_token_count = len(tokenizer.encode(user_prompt())) + len(tokenizer.encode(system_prompt))
@@ -82,13 +84,13 @@ def process_query(csv_path, query, max_token_count=1000):
 
     response, response_full = response_generator(
         openai_client,
-        chat_model=chat_name,
+        chat_model=chat_model,
         prompts=final_prompt,
         options=additional_options
     )
 
     # Calculate cost
-    cost_eur = calculate_total_cost(response_usage=response_full.usage, deployment_name=chat_name)
+    cost_eur = calculate_total_cost(response_usage=response_full.usage, deployment_name=chat_model)
 
     # Return results
     return {
