@@ -38,10 +38,10 @@ def process_query(csv_path, query, api_key=None, chat_model='gpt-4o', max_token_
     """
     # Load environment vars
     load_dotenv()
-    base_url_voc = os.getenv("OPENAI_BASE_VOC")
+    base_url_voc = os.getenv("OPENAI_BASE")
 
     # Use provided API key or fall back to environment variable
-    api_key_voc = api_key if api_key else os.getenv("OPENAI_API_VOC")
+    api_key_voc = api_key if api_key else os.getenv("OPENAI_API")
 
     # Deployment model names - use provided chat_model or default
     emb_name = 'text-embedding-3-large'

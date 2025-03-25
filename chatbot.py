@@ -26,10 +26,10 @@ async def on_chat_start():
 
     # Load environment vars for default values
     load_dotenv()
-    default_api_key = os.getenv("OPENAI_API_VOC", "")
+    default_api_key = os.getenv("OPENAI_API", "")
 
     # Set up initial values (will be overridden by user input)
-    cl.user_session.set("model_name", "gpt-4o")
+    cl.user_session.set("model_name", "gpt-4o-mini")
     cl.user_session.set("api_key", default_api_key)
     cl.user_session.set("csv_path", str(data_dir / csv_files[0]))
 
@@ -39,13 +39,13 @@ async def on_chat_start():
             TextInput(
                 id="api_key",
                 label="OpenAI API Key",
-                initial=default_api_key,
-                password=True
+                initial= default_api_key,
+                #password=True
             ),
             Select(
                 id="model_name",
                 label="OpenAI - Model",
-                values=["gpt-4o", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"],
+                values=["gpt-3.5-turbo", "gpt-4o-mini"],
                 initial_index=0
             ),
             Select(
@@ -85,34 +85,30 @@ async def main(message: cl.Message):
     query = message.content
 
     # Show processing message
-    processing_msg = await cl.Message(content="Processing your query...", author="Fashion Advisor").send()
+    await cl.Message(content="Processing your query...", author="Fashion Advisor").send()
 
     # Create a step to show the embedding and retrieval process
-    step = cl.Step(name="Retrieving relevant fashion information", type="tool")
+    step = cl.Step(name="Retrieving relevant fashion information", type="retrieval")
     await step.send()
 
     # First step message
-    await cl.Message(
-        content="Finding relevant fashion information for your query...",
-        parent_id=step.id
-    ).send()
+    #await cl.Message(content="Finding relevant fashion information for your query...", parent_id=step.id).send()
 
     # Process the query and get results (this might take some time)
     results = process_query(csv_path=csv_path, query=query, api_key=api_key, chat_model=model_name)
 
     # Update with completion message
-    await cl.Message(
-        content="Found relevant fashion information! Processing with AI model...",
-        parent_id=step.id
-    ).send()
+    #await cl.Message(content="Found relevant fashion information! Processing with AI model...",parent_id=step.id).send()
 
-    # Complete the step
-    # await step.complete()
 
     # Send the final response
-    response_content = f"{results['response']}\n\n---\n*Query processing cost: {results['cost']} EUR*"
+    response_content = \
+    f"""{results['response']}
+    
+    Usage:
+    - Query processing cost: {results['cost']} US$
+    - Total Token usage: {results['total_tokens']} tokens
+    - Input Tokens: {results['prompt_tokens']} tokens
+    - Output Tokens {results['completion_tokens']} tokens
+    """
     await cl.Message(content=response_content).send()
-
-    # Optional: Show token usage in a separate message
-    token_info = f"Token usage: {results['total_tokens']} total tokens ({results['prompt_tokens']} prompt, {results['completion_tokens']} completion)"
-    await cl.Message(content=token_info, author="System").send()

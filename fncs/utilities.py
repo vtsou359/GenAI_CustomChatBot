@@ -184,14 +184,18 @@ def calculate_total_cost(
         """
         return cost_per_million_tokens / 1_000_000
 
-    # Prices found in azure website:
+    # Prices found in openAI API website:
     if deployment_name == "gpt-4o-mini":
-        input_cost_per_million = 0.15835
-        output_cost_per_million = 0.6334
+        input_cost_per_million = 0.15
+        output_cost_per_million = 0.60
 
     if deployment_name == "gpt-4o":
-        input_cost_per_million = 2.63916
-        output_cost_per_million = 10.5567
+        input_cost_per_million = 2.50
+        output_cost_per_million = 10.00
+
+    if deployment_name == "gpt-3.5-turbo":
+        input_cost_per_million = 0.50
+        output_cost_per_million = 1.50
 
     input_cost_per_token = calculate_cost_per_token(input_cost_per_million)
     output_cost_per_token = calculate_cost_per_token(output_cost_per_million)
