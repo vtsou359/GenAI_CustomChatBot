@@ -40,14 +40,20 @@ def process_query(csv_path, query, api_key=None, chat_model='gpt-4o', max_token_
     load_dotenv()
     base_url_voc = os.getenv("OPENAI_BASE")
 
-    # Use provided API key or fall back to environment variable
-    api_key_voc = api_key if api_key else os.getenv("OPENAI_API")
+    # First check direct environment variables
+    api_key_voc = api_key or os.environ.get("OPENAI_API")
+
+    # Only fall back to dotenv if not found in environment
+    if not api_key_voc:
+        load_dotenv()  # Only load .env if needed
+        api_key_voc = os.getenv("OPENAI_API")
+
 
     # Deployment model names - use provided chat_model or default
     emb_name = 'text-embedding-3-large'
 
     # Initialize OpenAI client and tokenizer
-    openai_client = create_openai_client(api_key=api_key_voc, base_url=base_url_voc)
+    openai_client = create_openai_client(api_key=api_key_voc, base_url= base_url_voc)
     tokenizer = tiktoken.encoding_for_model(chat_model)
 
     # Load and prepare the dataset
